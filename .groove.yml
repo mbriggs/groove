@@ -1,0 +1,7 @@
+ports:
+  web: ~
+  db: 5432
+  redis: ~
+hooks:
+  open: ./scripts/groove_open.sh
+  archive: ./scripts/groove_archive.sh
