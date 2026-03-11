@@ -10,8 +10,9 @@ import (
 
 // Project represents a .groove.yml file at the repo root.
 type Project struct {
-	Ports map[string]*int `yaml:"ports"`
-	Hooks struct {
+	SessionPrefix string         `yaml:"session_prefix"`
+	Ports         map[string]*int `yaml:"ports"`
+	Hooks         struct {
 		Open    string `yaml:"open"`
 		Archive string `yaml:"archive"`
 	} `yaml:"hooks"`

@@ -1,3 +1,4 @@
+session_prefix: grv
 ports:
   web: ~
   db: 5432
