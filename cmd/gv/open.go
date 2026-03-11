@@ -54,6 +54,37 @@ func runOpen(cmd *cobra.Command, args []string) error {
 	}
 	normalized := normalize.Branch(fullBranch)
 
+	// Check if branch already exists
+	if git.LocalBranchExists(proj.Root, fullBranch) {
+		store, err := state.Load()
+		if err != nil {
+			return err
+		}
+
+		wtID := proj.Name + "-" + normalized
+		if wt, ok := store.Worktrees[wtID]; ok {
+			attach, err := ui.Confirm(fmt.Sprintf("Branch %s already exists. Attach to existing worktree?", fullBranch))
+			if err != nil || !attach {
+				return fmt.Errorf("branch %s already exists", fullBranch)
+			}
+
+			shell := config.DetectShell(globalCfg)
+			envVars := resolve.BuildEnvVars(wt)
+			if err := tmux.WriteEnvFile(wt.Path, envVars); err != nil {
+				return err
+			}
+			if !tmux.SessionExists(wt.SessionName(proj.Config.SessionPrefix)) {
+				if err := tmux.CreateSession(wt.SessionName(proj.Config.SessionPrefix), wt.Path, shell, envVars); err != nil {
+					return err
+				}
+			}
+			fmt.Fprintf(os.Stderr, "switching to session %s\n", wt.SessionName(proj.Config.SessionPrefix))
+			return tmux.SwitchToSession(wt.SessionName(proj.Config.SessionPrefix))
+		}
+
+		return fmt.Errorf("branch %s already exists but has no groove worktree — resolve manually", fullBranch)
+	}
+
 	// Create branch from default branch
 	startPoint := globalCfg.DefaultRemote + "/" + defaultBranch
 	if err := git.CreateBranch(proj.Root, fullBranch, startPoint); err != nil {
@@ -77,12 +108,6 @@ func setupWorktree(globalCfg *config.Global, proj *resolve.ProjectInfo, branch, 
 
 	wtPath := filepath.Join(wtRoot, proj.Name, normalized)
 	wtID := proj.Name + "-" + normalized
-
-	prefix := proj.Config.SessionPrefix
-	if prefix == "" {
-		prefix = proj.Name
-	}
-	sessionName := prefix + ": " + branch
 
 	// Track whether we created the worktree so we can clean up on failure
 	createdWorktree := false
@@ -135,7 +160,6 @@ func setupWorktree(globalCfg *config.Global, proj *resolve.ProjectInfo, branch, 
 		ProjectRoot:      proj.Root,
 		ProjectRemoteURL: proj.RemoteURL,
 		Path:             wtPath,
-		Session:          sessionName,
 		Branch:           branch,
 		DefaultBranch:    defaultBranch,
 		Ports:            assignedPorts,
@@ -147,6 +171,8 @@ func setupWorktree(globalCfg *config.Global, proj *resolve.ProjectInfo, branch, 
 		cleanup()
 		return err
 	}
+
+	sessionName := wt.SessionName(proj.Config.SessionPrefix)
 
 	// Write env file and create session
 	envVars := resolve.BuildEnvVars(wt)

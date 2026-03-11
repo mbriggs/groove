@@ -81,6 +81,13 @@ func Fetch(repoDir, remote string) error {
 	return nil
 }
 
+// LocalBranchExists checks if a local branch exists.
+func LocalBranchExists(repoDir, branch string) bool {
+	cmd := exec.Command("git", "show-ref", "--verify", "--quiet", "refs/heads/"+branch)
+	cmd.Dir = repoDir
+	return cmd.Run() == nil
+}
+
 // RemoteBranchExists checks if a branch exists on the remote.
 func RemoteBranchExists(repoDir, remote, branch string) (bool, error) {
 	cmd := exec.Command("git", "ls-remote", "--heads", remote, branch)

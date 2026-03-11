@@ -61,6 +61,11 @@ func runAttach(cmd *cobra.Command, args []string) error {
 	}
 
 	wt := wtMap[choice]
+
+	if _, err := os.Stat(wt.Path); os.IsNotExist(err) {
+		return fmt.Errorf("worktree path %s no longer exists — run 'gv prune' to clean up stale state", wt.Path)
+	}
+
 	shell := config.DetectShell(globalCfg)
 
 	// Ensure env file and session exist
@@ -69,12 +74,12 @@ func runAttach(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if !tmux.SessionExists(wt.Session) {
-		if err := tmux.CreateSession(wt.Session, wt.Path, shell, envVars); err != nil {
+	if !tmux.SessionExists(wt.SessionName("")) {
+		if err := tmux.CreateSession(wt.SessionName(""), wt.Path, shell, envVars); err != nil {
 			return err
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "switching to session %s\n", wt.Session)
-	return tmux.SwitchToSession(wt.Session)
+	fmt.Fprintf(os.Stderr, "switching to session %s\n", wt.SessionName(""))
+	return tmux.SwitchToSession(wt.SessionName(""))
 }

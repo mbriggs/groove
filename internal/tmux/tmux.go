@@ -87,13 +87,39 @@ func SwitchToSession(sessionName string) error {
 	return cmd.Run()
 }
 
-// DeleteSession kills a tmux session.
+// DeleteSession kills a tmux session. If we're inside tmux and this is the
+// current session, switch to another session first (or detach if none exist).
 func DeleteSession(sessionName string) error {
+	if insideTmux() && isCurrentSession(sessionName) {
+		// Find another session to switch to
+		switched := false
+		for _, s := range ListSessions() {
+			if s != sessionName {
+				exec.Command("tmux", "switch-client", "-t", s).Run()
+				switched = true
+				break
+			}
+		}
+		if !switched {
+			// No other sessions — detach so kill doesn't drop the terminal
+			exec.Command("tmux", "detach-client").Run()
+		}
+	}
+
 	cmd := exec.Command("tmux", "kill-session", "-t", sessionName)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("deleting session %s: %s", sessionName, strings.TrimSpace(string(out)))
 	}
 	return nil
+}
+
+// isCurrentSession checks if the given session is the one we're attached to.
+func isCurrentSession(sessionName string) bool {
+	out, err := exec.Command("tmux", "display-message", "-p", "#{session_name}").Output()
+	if err != nil {
+		return false
+	}
+	return strings.TrimSpace(string(out)) == sessionName
 }
 
 // SessionExists checks if a tmux session exists.

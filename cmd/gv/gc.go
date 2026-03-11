@@ -37,8 +37,8 @@ func runGC(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		if !tmux.SessionExists(wt.Session) {
-			fmt.Fprintf(os.Stderr, "note: session %s is dead for worktree %s\n", wt.Session, id)
+		if !tmux.SessionExists(wt.SessionName("")) {
+			fmt.Fprintf(os.Stderr, "note: session %s is dead for worktree %s\n", wt.SessionName(""), id)
 		}
 	}
 

@@ -74,7 +74,7 @@ func runSessionsUp(cmd *cobra.Command, args []string) error {
 	var created int
 
 	for _, wt := range worktrees {
-		if tmux.SessionExists(wt.Session) {
+		if tmux.SessionExists(wt.SessionName("")) {
 			continue
 		}
 
@@ -84,12 +84,12 @@ func runSessionsUp(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		if err := tmux.CreateSession(wt.Session, wt.Path, shell, envVars); err != nil {
+		if err := tmux.CreateSession(wt.SessionName(""), wt.Path, shell, envVars); err != nil {
 			fmt.Fprintf(os.Stderr, "warning: could not create session for %s: %v\n", wt.ID, err)
 			continue
 		}
 
-		fmt.Fprintf(os.Stderr, "created session %s\n", wt.Session)
+		fmt.Fprintf(os.Stderr, "created session %s\n", wt.SessionName(""))
 		created++
 	}
 
@@ -130,14 +130,14 @@ func runSessionsDown(cmd *cobra.Command, args []string) error {
 
 	var killed int
 	for _, wt := range worktrees {
-		if !tmux.SessionExists(wt.Session) {
+		if !tmux.SessionExists(wt.SessionName("")) {
 			continue
 		}
-		if err := tmux.DeleteSession(wt.Session); err != nil {
+		if err := tmux.DeleteSession(wt.SessionName("")); err != nil {
 			fmt.Fprintf(os.Stderr, "warning: %v\n", err)
 			continue
 		}
-		fmt.Fprintf(os.Stderr, "killed session %s\n", wt.Session)
+		fmt.Fprintf(os.Stderr, "killed session %s\n", wt.SessionName(""))
 		killed++
 	}
 

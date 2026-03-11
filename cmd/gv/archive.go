@@ -65,8 +65,8 @@ func runArchive(cmd *cobra.Command, args []string) error {
 	}
 
 	// Kill tmux session
-	if tmux.SessionExists(wt.Session) {
-		if err := tmux.DeleteSession(wt.Session); err != nil {
+	if tmux.SessionExists(wt.SessionName("")) {
+		if err := tmux.DeleteSession(wt.SessionName("")); err != nil {
 			fmt.Fprintf(os.Stderr, "warning: %v\n", err)
 		}
 	}
@@ -91,22 +91,27 @@ func runArchive(cmd *cobra.Command, args []string) error {
 
 // archiveWorktree performs the archive flow for a single worktree (used by prune).
 func archiveWorktree(wt *state.Worktree, store *state.Store) {
-	projCfg, _ := config.LoadProject(wt.ProjectRoot)
+	pathExists := true
+	if _, err := os.Stat(wt.Path); os.IsNotExist(err) {
+		pathExists = false
+	}
 
-	if projCfg != nil && projCfg.Hooks.Archive != "" {
-		envVars := resolve.BuildEnvVars(wt)
-		if err := hooks.Run(projCfg.Hooks.Archive, wt.Path, envVars); err != nil {
-			fmt.Fprintf(os.Stderr, "warning: hook failed for %s: %v\n", wt.ID, err)
+	if pathExists {
+		projCfg, _ := config.LoadProject(wt.ProjectRoot)
+		if projCfg != nil && projCfg.Hooks.Archive != "" {
+			envVars := resolve.BuildEnvVars(wt)
+			if err := hooks.Run(projCfg.Hooks.Archive, wt.Path, envVars); err != nil {
+				fmt.Fprintf(os.Stderr, "warning: hook failed for %s: %v\n", wt.ID, err)
+			}
+		}
+
+		if err := git.RemoveWorktree(wt.ProjectRoot, wt.Path); err != nil {
+			fmt.Fprintf(os.Stderr, "warning: %v\n", err)
 		}
 	}
 
-	// Remove worktree from disk first
-	if err := git.RemoveWorktree(wt.ProjectRoot, wt.Path); err != nil {
-		fmt.Fprintf(os.Stderr, "warning: %v\n", err)
-	}
-
-	if tmux.SessionExists(wt.Session) {
-		if err := tmux.DeleteSession(wt.Session); err != nil {
+	if tmux.SessionExists(wt.SessionName("")) {
+		if err := tmux.DeleteSession(wt.SessionName("")); err != nil {
 			fmt.Fprintf(os.Stderr, "warning: %v\n", err)
 		}
 	}

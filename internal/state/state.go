@@ -16,11 +16,25 @@ type Worktree struct {
 	ProjectRoot      string         `json:"project_root"`
 	ProjectRemoteURL string         `json:"project_remote_url"`
 	Path             string         `json:"path"`
-	Session          string         `json:"session"`
 	Branch           string         `json:"branch"`
 	DefaultBranch    string         `json:"default_branch"`
 	Ports            map[string]int `json:"ports"`
 	CreatedAt        time.Time      `json:"created_at"`
+}
+
+// SessionName computes the tmux session name. If sessionPrefix is empty,
+// the project name is used as the prefix.
+func (wt *Worktree) SessionName(sessionPrefix string) string {
+	prefix := sessionPrefix
+	if prefix == "" {
+		prefix = wt.Project
+	}
+	// ID is "project-normalized", strip project prefix to get normalized branch
+	normalized := wt.ID
+	if len(wt.Project) < len(wt.ID) {
+		normalized = wt.ID[len(wt.Project)+1:]
+	}
+	return prefix + "-" + normalized
 }
 
 // Store holds all groove state.

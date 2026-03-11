@@ -64,7 +64,7 @@ func RenderWorktreeList(worktrees []*state.Worktree) {
 
 	for _, wt := range worktrees {
 		status := deadStyle.Render("dead")
-		if sessionSet[wt.Session] {
+		if sessionSet[wt.SessionName("")] {
 			status = aliveStyle.Render("alive")
 		}
 

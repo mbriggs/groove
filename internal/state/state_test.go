@@ -18,7 +18,6 @@ func TestLoadSaveRoundTrip(t *testing.T) {
 		ProjectRoot:      "/home/user/code/myapp",
 		ProjectRemoteURL: "git@github.com:user/myapp.git",
 		Path:             "/home/user/groove/myapp/my-feature",
-		Session:          "myapp: mbriggs/my-feature",
 		Branch:           "mbriggs/my-feature",
 		DefaultBranch:    "main",
 		Ports:            map[string]int{"web": 3001, "db": 5432},
